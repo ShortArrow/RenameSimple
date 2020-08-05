@@ -22,6 +22,13 @@ You will receive a toast when the rename is complete.
 
 # How to Use
 
+1. We will ask for your desired address. Please answer
+1. You will be prompted to enter the character string you want to replace.
+1. At this time, the answer is predicted and displayed based on the file name list of the address that responded first.
+1. Answer the replaced character string.
+1. File name replacement will begin.
+1. Receive toast
+
 ## Install
 
 Copy this directory "RenameSimple" to your desktop or another local directory.
