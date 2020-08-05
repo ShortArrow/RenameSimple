@@ -1,6 +1,22 @@
 Param(
 )
 
+function Find-MachingWord {
+    param (
+        [array]
+        $arr
+    )
+    $arr | ForEach-Object {
+        $substr = for ($s = 0; $s -lt $_.length; $s++) {
+            for ($l = 1; $l -le ($_.length - $s); $l++) {
+                $_.substring($s, $l);
+            }
+        } 
+        $substr | ForEach-Object { $_.toLower() } | Select-Object -unique
+    } | Group-Object | Where-Object { $_.count -eq $arr.length } | Sort-Object { $_.name.length } | Select-Object -expand name -l 1
+}
+
+
 [string]$address = ''
 [string]$target = ''
 [string]$destination = ''
@@ -12,32 +28,40 @@ do {
     if ($buf -ne $None) {
         $address = $buf
     }
+    if (Test-Path -LiteralPath $address) {
+        $names=(Get-ChildItem -LiteralPath $address -File).Name
+        $MatchResult=Find-MachingWord ($names)
+    }
+    
     $buf = $None
-    $buf = Read-Host -Prompt "Target String"
-    if ($buf -ne $None) {
+    Write-Host -Object "Target String (Default is """ -NoNewline
+    Write-Host -Object $MatchResult -ForegroundColor Blue -NoNewline
+    $buf = Read-Host -Prompt """.)"
+    if ($buf -ne "") {
         $target = $buf
+    }
+    else {
+        $target = $MatchResult
     }
     $buf = $None
     $buf = Read-Host -Prompt "Destination String"
     if ($buf -ne $None) {
         $destination = $buf
     }
+    # $target=[regex]::Escape($target)
+    # $destination=[regex]::Escape($destination)
     
-    Write-Host '################################################'
-    Write-Host '################ Start Preview #################'
-    Write-Host '################################################'
+    Write-Host '################ Start Preview #################' -ForegroundColor Blue
     
-    (Get-ChildItem -LiteralPath $address -File).Name -replace $('^(.*)' + $target + '(.*)$'), $('${1}' + $target + '${2}' + ' -> ' + '${1}' + $destination + '${2}')
+    (Get-ChildItem -LiteralPath $address -File).Name -replace $('^(.*)' + [regex]::Escape($target) + '(.*)$'), $('${1}' + $target + '${2}' + ' -> ' + '${1}' + $destination + '${2}')
     
-    Write-Host '################################################'
-    Write-Host '################ End of Preview ################'
-    Write-Host '################################################'
+    Write-Host '################ End of Preview ################' -ForegroundColor Blue
     
     Write-Host 'Please Check Preview.'
     $lastconfirm = $(Read-Host -Prompt "is This OK ? ([y]/n)").ToLower()
 } while ($lastconfirm -eq 'n')
     
-Get-ChildItem -LiteralPath $address -File | Rename-Item -NewName { $_.Name -replace $('(.*)' + $target + '(.*)'), $('${1}' + $destination + '${2}') }
+Get-ChildItem -LiteralPath $address -File | Rename-Item -NewName { $_.Name -replace $('(.*)' + [regex]::Escape($target) + '(.*)'), $('${1}' + $destination + '${2}') }
 
 # Modify [CmdletBinding()] to [CmdletBinding(SupportsShouldProcess=$true)]
 $paths = @()
@@ -45,7 +69,7 @@ foreach ($aPath in $Path) {
     if (!(Test-Path -LiteralPath $aPath)) {
         $ex = New-Object System.Management.Automation.ItemNotFoundException "Cannot find path '$aPath' because it does not exist."
         $category = [System.Management.Automation.ErrorCategory]::ObjectNotFound
-        $errRecord = New-Object System.Management.Automation.ErrorRecord $ex,'PathNotFound',$category,$aPath
+        $errRecord = New-Object System.Management.Automation.ErrorRecord $ex, 'PathNotFound', $category, $aPath
         $psCmdlet.WriteError($errRecord)
         continue
     }
@@ -61,7 +85,7 @@ foreach ($aPath in $paths) {
     }
 }
 Write-Host ''
-Write-Host " Finish " -BackgroundColor Green -ForegroundColor Black
+Write-Host " Finish " -ForegroundColor Green
 
 if ([environment]::OSVersion.Version.Major -ge 10 ) {
     $ToastModulePath = $env:USERPROFILE + "\Documents\PowerShell\Modules\BurntToast"
