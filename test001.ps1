@@ -28,9 +28,12 @@ do {
     if ($buf -ne $None) {
         $address = $buf
     }
+    if ('"' -eq $address[0] -and '"' -eq $address[$address.Length - 1]) {
+        $address = $address.SubString(1, ($address.Length - 2))
+    }
     if (Test-Path -LiteralPath $address) {
-        $names=(Get-ChildItem -LiteralPath $address -File).Name
-        $MatchResult=Find-MachingWord ($names)
+        $names = (Get-ChildItem -LiteralPath $address -File).Name
+        $MatchResult = Find-MachingWord ($names)
     }
     
     $buf = $None
